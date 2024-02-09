@@ -1,0 +1,101 @@
+library("data.table")
+library("lubridate")
+library("dplyr")
+library("Hmisc")
+library("profvis")
+library("microbenchmark")
+library("compiler")
+library("doParallel")
+library("foreach")
+library("shiny")
+library("rsconnect")
+library("leaflet")
+library("shinythemes")
+library("roxygen2")
+library("sparklyr")
+library("testthat")
+library("usethis")
+
+
+#rm(list = ls())
+#Day5- Excercise 1
+#1
+file_path_data_cust = "C:/Users/raffa/Desktop/University/Master/7. Semester/Day5/data_customer.csv"
+data_cust <- fread(file_path_data_cust)
+
+file_path_data_pers = "C:/Users/raffa/Desktop/University/Master/7. Semester/Day5/data_personal.csv"
+data_pers <- fread(file_path_data_pers)
+
+
+#Exercise 2
+#1
+cust_pers_table <- merge(data_cust,
+                    data_pers,
+                    by="CustomerId",
+                    all=TRUE)
+#2
+cust_pers_table$Gender <- as.factor(cust_pers_table$Gender)
+cust_pers_table$Exited <- as.factor(cust_pers_table$Exited)
+
+#3
+str(cust_pers_table)
+colnames(cust_pers_table)
+summary(cust_pers_table)
+
+
+#Exercise 3
+#1
+#Churn: Leaving the company. The higher the churn prob,the higher the chance to leave the company
+#Create a model for churn probability using logistic regression
+#Outcome variable: Exit (showing if a customer churned or not)
+#Predictors: CreditScore, Gender, Age, Tenure, Balance, NumOfProducts, HasCrCards, IsActiveMember, EstimatedSalary
+
+# Create a formula using the predictors
+formula <- formula("Exited ~ CreditScore + Gender + Age + Tenure + Balance + NumOfProducts + HasCrCard + IsActiveMember + EstimatedSalary")
+logistic_model <- glm(formula, data = cust_pers_table, family = "binomial")
+
+
+#2
+predictions <- predict(logistic_model, cust_pers_table, type="response")
+cust_pers_table[, Churn_Prob := predictions]
+
+
+#3
+cust_highest_churn_prob <- cust_pers_table[Churn_Prob==max(Churn_Prob)]
+cust_lowest_churn_prob <- cust_pers_table[Churn_Prob==min(Churn_Prob)]
+
+
+#4
+men_avg_churn_prob <- mean(cust_pers_table[Gender=="Male", Churn_Prob], na.rm=TRUE)
+men_avg_churn_prob
+
+women_avg_churn_prob <- mean(cust_pers_table[Gender=="Female", Churn_Prob], na.rm=TRUE)
+women_avg_churn_prob
+
+
+#Exercise 4
+#3
+#Test if the package works
+library(ChurnProbability)
+file_path_data_cust = "C:/Users/raffa/Desktop/University/Master/7. Semester/Day5/data_customer.csv"
+data_cust <- fread(file_path_data_cust)
+
+file_path_data_pers = "C:/Users/raffa/Desktop/University/Master/7. Semester/Day5/data_personal.csv"
+data_pers <- fread(file_path_data_pers)
+
+devtools::test()
+cust_pers_table <- merge(data_cust,
+                         data_pers,
+                         by="CustomerId",
+                         all=TRUE)
+calc_churn_prob(cust_pers_table, 15565878)
+
+
+#4 & #5 (Testing)
+#(1)in the console: usethis::use_testthat() to create a testing directory
+#(2)create testing files (test_*) and save them in the tests folder of the new directory
+#(3)in the console: test_that()
+
+#6
+
+
